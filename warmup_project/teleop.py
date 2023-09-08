@@ -11,7 +11,8 @@ DIRECTION = {
         'w':0.3,
         'a':1.0,
         's':-0.3,
-        'd':-1.0}
+        'd':-1.0,
+        'x':0.0}
 
 
 class Teleop(Node):
@@ -39,14 +40,10 @@ class Teleop(Node):
             if key == '\x03':
                 rclpy.shutdown()
             
-            if key == 'w': #Forward
+            if key == 'w' or key == 's': # Forward/backwards
                 msg.linear.x = DIRECTION[key]
-            elif key == 'a':
+            elif key == 'a' or key == 'd':
                 msg.angular.z = DIRECTION[key]
-            elif key == 'd':
-                msg.angular.z = DIRECTION[key]
-            elif key == 's':
-                msg.linear.x = DIRECTION[key]
            
 
         self.vel_pub.publish(msg)
