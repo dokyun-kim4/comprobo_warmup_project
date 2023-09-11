@@ -5,7 +5,6 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 
 
-
 class WallFollow(Node):
     def __init__(self):
         super().__init__('wall_follower')
@@ -32,9 +31,7 @@ class WallFollow(Node):
         self.dists = {'deg45':msg.ranges[45],'deg90':msg.ranges[90],'deg135':msg.ranges[135]}
         self.dists['pcnt_error'] = (self.dists['deg45']-sqrt(2)*self.dists['deg90'])/(sqrt(2)*self.dists['deg90'])
 
-
-
-    def angle_check(self):
+    def check_angle(self):
         '''
         Returns True if current angle from the wall is within the given percentage tolerance
         '''
@@ -48,7 +45,7 @@ class WallFollow(Node):
         k = 0.5
         
         if self.dists:
-            if self.angle_check():
+            if self.check_angle():
                 msg.angular.z = 0.0
                 msg.linear.x = 0.2
 
