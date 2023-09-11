@@ -18,8 +18,7 @@ class WallFollow(Node):
         timer_period = 0.1 # seconds
         self.timer = self.create_timer(timer_period, callback = self.run_loop)
         
-        self.dist_tolerance = 0.1 # meters
-        self.angle_tolerance = 0.05 # percent
+        self.angle_tolerance = 0.045 # percent
         self.dist_goal = 0.6
         self.dists = None
 
@@ -27,14 +26,13 @@ class WallFollow(Node):
 
     def get_data(self,msg):
         '''
-        Store neato's distance from wall @ 45,90,135 degrees and an approximation error value
+        Store neato's distance from wall @ 45,135 degrees and an approximation error value
         '''
         
         self.dists = {'deg45':msg.ranges[45],'deg90':msg.ranges[90],'deg135':msg.ranges[135]}
-        print(self.dists)
-        self.dists['pcnt_error'] = (self.dists['deg45']/sqrt(2) - self.dists['deg90'])/self.dists['deg90']
-        
-    
+        self.dists['pcnt_error'] = (self.dists['deg45']-sqrt(2)*self.dists['deg90'])/(sqrt(2)*self.dists['deg90'])
+
+
 
     def angle_check(self):
         '''
@@ -47,22 +45,20 @@ class WallFollow(Node):
         Publish the message
         '''
         msg = Twist()
-        k = 2
+        k = 0.5
         
-        #print(self.angle_check)
         if self.dists:
             if self.angle_check():
                 msg.angular.z = 0.0
-                msg.linear.x = 0.3
+                msg.linear.x = 0.2
 
             else:
-                print("Turning")
                 msg.linear.x = 0.0
 
                 if self.dists['pcnt_error'] < 0:
-                    msg.angular.z = -0.35 #+ abs(self.dists['pcnt_error']) * k
+                    msg.angular.z = -0.1 + (self.dists['pcnt_error']*k)
                 else:
-                    msg.angular.z = 0.35 #+ abs(self.dists['pcnt_error']) * k
+                    msg.angular.z = 0.1 + (self.dists['pcnt_error']*k)
 
         
         self.vel_pub.publish(msg)
