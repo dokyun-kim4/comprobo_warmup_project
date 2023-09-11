@@ -16,7 +16,29 @@ DIRECTION = {
 
 
 class Teleop(Node):
+    """
+    A Teleop node to control a Neato robot with user input.
+
+    Attributes:
+        vel_pub - publisher node
+            A node which publishes the 'cmd_vel' topic.
+        timer - a timer node
+            A node which governs the node's loop rate.
+
+    Methods:
+        run_loop():
+            Executes the Node's runtime loop.
+    """
     def __init__(self):
+        """
+        Constructs all required attributes for the Teleop Node.
+
+        Parameters:
+            vel_pub - publisher node
+                A node which publishes the 'cmd_vel' topic.
+            timer - a timer node
+                A node which governs the node's loop rate.
+        """
         super().__init__('teleop_node')
         self.vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         timer_period = 0.2 # seconds
@@ -24,6 +46,12 @@ class Teleop(Node):
     
 
     def run_loop(self):
+        """
+        Executes the teleop runtime loop.
+
+        Checks for keyboard from the user. Based on the input publishes
+        the corresponding velocity commands.
+        """
         msg = Twist()
         def getKey():
             tty.setraw(sys.stdin.fileno())
@@ -51,6 +79,9 @@ class Teleop(Node):
 
 
 def main():
+    """
+    Initializes and publishes the teleop node.
+    """
     rclpy.init()
     teleop_publisher = Teleop()
     rclpy.spin(teleop_publisher)
