@@ -40,14 +40,7 @@ class WallFollow(Node):
         '''
         Returns True if current angle from the wall is within the given percentage tolerance
         '''
-        return abs(self.dists['pcnt_error']) <= self.angle_tolerance
-    
-    # def dist_check(self):
-    #     '''
-    #     pluh
-    #     '''
-    #     return self.dists['deg90'] >= self.dist_goal-self.dist_tolerance and self.dists['deg90'] <= self.dist_goal+self.dist_tolerance
-        
+        return abs(self.dists['pcnt_error']) <= self.angle_tolerance        
 
     def run_loop(self):
         '''
