@@ -42,7 +42,7 @@ class WallFollow(Node):
         Publish the message
         '''
         msg = Twist()
-        k = 0.5
+        k = 0.4
         
         if self.dists:
             if self.check_angle():
