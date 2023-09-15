@@ -105,12 +105,11 @@ class PersonFollow(Node):
         msg = Twist() 
         if self.angle_to_turn: # If not None
             if self.angle_to_turn >= 315: # clockwise
-                msg.angular.z = -0.6 * (1 / (self.angle_to_turn - 270) / 45)
+                msg.angular.z = -0.4 #* (1 / (self.angle_to_turn - 270) / 45)
             elif self.angle_to_turn <=45: # counterclockwise
-                msg.angular.z = 0.6 * (self.angle_to_turn / 45)
+                msg.angular.z = 0.4 #* (self.angle_to_turn / 45)
             if self.reach_goal is False:
                 msg.linear.x = 0.2
-        msg.linear.x = 0.2
         self.vel_pub.publish(msg)
 
 def main():
