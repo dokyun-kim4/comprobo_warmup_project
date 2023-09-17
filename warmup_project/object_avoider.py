@@ -47,7 +47,6 @@ class ObstacleAvoider(Node):
         Get current neato angle
         """
         self.current_angle = rad2deg(acos(msg.pose.pose.orientation.w) * 2)
-        print(self.current_angle)
 
     def get_laser(self, msg):
         """
@@ -68,7 +67,6 @@ class ObstacleAvoider(Node):
 
         else:
             self.obstacle_detect = True
-            print("obstacle")
 
     def compare_side_dist(self):
         """
@@ -82,7 +80,6 @@ class ObstacleAvoider(Node):
     def rotate(self):
         if self.current_angle >= self.goal_angle:
             self.ang_vel = 0.0
-            print("turned")
             self.rotated = True
         else:
             self.ang_vel = 0.3 * self.ang_direction
@@ -130,7 +127,6 @@ class ObstacleAvoider(Node):
                         self.rotate()
                     if self.current_angle >= self.goal_angle:
                         self.lin_vel = 0.3
-                        print("i have turned")
                         self.obstacle_parallel()
                 else:
                     if self.turn_reset is False:
