@@ -12,7 +12,7 @@ class WallFollow(Node):
         # subcribe to odometry node, calculate when to move & turn
         self.laser_sub = self.create_subscription(LaserScan,'scan',callback=self.get_data,qos_profile=10)
 
-        # publish the lin_vel and ang_vel calculated from `square_draw`
+        # publish the lin_vel and ang_vel
         self.vel_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         timer_period = 0.1 # seconds
         self.timer = self.create_timer(timer_period, callback = self.run_loop)
