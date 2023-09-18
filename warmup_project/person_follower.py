@@ -1,10 +1,11 @@
 import rclpy
 from rclpy.node import Node
 from math import acos
-from numpy import rad2deg
+from numpy import rad2deg, deg2rad, cos,sin
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry as Odom
+from visualization_msgs.msg import Marker
 
 
 class PersonFollow(Node):
@@ -15,19 +16,24 @@ class PersonFollow(Node):
         self.odom_sub = self.create_subscription(Odom,'odom',callback=self.get_angle,qos_profile=10)
 
         self.vel_pub = self.create_publisher(Twist,'cmd_vel',10)
+        self.marker_pub = self.create_publisher(Marker,'person_marker',10)
         timer_period = 0.1
         self.timer = self.create_timer(timer_period, callback = self.run_loop)
         
         self.crnt_angle = None
         self.angle_to_turn = None
-        self.following_distance = 1
+        self.following_distance = 0.4
         self.reach_goal = None
+        self.person = None
 
-    
     def get_angle(self,msg):
         w = msg.pose.pose.orientation.w
         self.crnt_angle = rad2deg(acos(w)*2)
 
+    def pol2cart(self,rho, phi):
+        x = rho * cos(deg2rad(phi))
+        y = rho * sin(deg2rad(phi))
+        return(x, y)      
 
     def group_clusters(self,dists,max_gap):
         """
@@ -39,7 +45,8 @@ class PersonFollow(Node):
         prev_dist = dists[0][1] # The first distance in the list
 
         for dist in dists[1::]:
-            if abs(dist[1] - prev_dist) <= max_gap: # If crnt point is within tolerable gap distance, add it to crnt cluster
+            if dist != 0.0 and abs(dist[1] - prev_dist) <= max_gap: # If crnt point is within tolerable gap distance, add it to crnt cluster
+                print(dist)
                 crnt_cluster.append(dist)
             else: # If 
                 clusters.append(crnt_cluster)
@@ -84,16 +91,16 @@ class PersonFollow(Node):
         clusters = self.group_clusters(angle_and_dists,max_gap=0.5)
 
         # Identify the person (largest closest cluster)
-        person = self.closest_cluster(clusters,window=4)
+        self.person = self.closest_cluster(clusters,window=1.5)
 
         # You can print `person` to see the range of angles & distance that the person is in
         # print(person)
 
         # The robot should turn towards the middle of the object, so `angle_to_turn` is the median angle from the list `person`
-        if len(person) > 0:
-            self.angle_to_turn = person[len(person) // 2][0]
+        if len(self.person) > 0:
+            self.angle_to_turn = self.person[len(self.person) // 2][0]
 
-            if person[len(person) // 2][1] <= self.following_distance:
+            if self.person[len(self.person) // 2][1] <= self.following_distance:
                 self.reach_goal = True
             else:
                 self.reach_goal = False
@@ -103,6 +110,31 @@ class PersonFollow(Node):
     
     def run_loop(self):
         msg = Twist() 
+        if self.person:
+            marker = Marker()
+            com = self.person[len(self.person) // 2]
+            x,y = self.pol2cart(com[1],com[0])
+            marker.header.frame_id = "base_link"
+            marker.ns = "my_namespace"
+            marker.id = 0
+            marker.type = Marker.SPHERE
+            marker.action = Marker.MODIFY
+            marker.pose.position.x = x
+            marker.pose.position.y = y
+            marker.pose.position.z = 0.0
+            marker.pose.orientation.x = 0.0
+            marker.pose.orientation.y = 0.0
+            marker.pose.orientation.z = 0.0
+            marker.pose.orientation.w = 1.0
+            marker.scale.x = 0.1
+            marker.scale.y = 0.1
+            marker.scale.z = 0.1
+            marker.color.a = 1.0; # Don't forget to set the alpha!
+            marker.color.r = 255.0
+            marker.color.g = 0.0
+            marker.color.b = 0.0
+            self.marker_pub.publish(marker)
+
         if self.angle_to_turn: # If not None
             if self.angle_to_turn >= 315: # clockwise
                 msg.angular.z = -0.4 #* (1 / (self.angle_to_turn - 270) / 45)
