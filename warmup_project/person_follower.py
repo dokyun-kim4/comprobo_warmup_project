@@ -9,6 +9,38 @@ from visualization_msgs.msg import Marker
 
 
 class PersonFollow(Node):
+    """
+    A ROS2 node that directs the Neato to follow a person if detected within its scan range
+
+    Attributes:
+        laser_sub: ROS2 node that is subscribed to Neato's LaserScan data
+        odom_sub: ROS2 node that is subscribed to Neato's odometry data
+        vel_pub: ROS2 node that publishes linear/angular velocity to Neato
+        marker_pub: ROS2 node that publishes a marker at the center of detected person
+        timer: ROS2 node that governs loop timer
+        crnt_angle: Neato's current odometry angle (degrees)
+        angle_to_turn: Amount the Neato needs to turn to face the person (degrees)
+        following_distance: Distance from person the Neato tries to maintain (meters)
+        reach_goal: Boolean indicating if Neato is within `following_distance`
+        person: A list of points that make up the person
+
+    Methods:
+        get_angle(msg):
+            Using the odometry data (msg), converts quaterion angle to degrees to get Neato's angular orientation
+            Store to `crnt_angle'
+        pol2cart(rho,phi):
+            Given a polar coordinate (rho,phi), convert to cartesian (x,y)
+            Returns (x,y)
+        group_clusters(dists,max_gap):
+            Given a list of tuples in form (angle,distance), identify clusters where each point is less than `max_gap` away from each other.
+            Returns a list of lists where each inner list is a cluster
+        closest_clusters(clusters,window):
+            Given a list of clusters identified by `group_clusters()`, filter out clusters that are outside `window (meters)`.
+            Then detect the largest cluster within the remaining clusters. The largest cluster is stored in `person`
+        follow_person(msg):
+            Using the Neato's laser scan, call `group_cluster` and `closest_clusters` to detect person. Then, calculate the appropritate 
+            linear & angular velocity to follow the person.
+    """
     def __init__(self):
         super().__init__('person_follower')
 
