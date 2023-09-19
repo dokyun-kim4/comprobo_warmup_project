@@ -4,10 +4,33 @@ from numpy import cos,sin, deg2rad
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
-from visualization_msgs.msg import Marker, MarkerArray
+from visualization_msgs.msg import Marker,MarkerArray
 
 
 class WallFollow(Node):
+    """
+    A ROS2 node that directs the Neato to stay parallel to a wall while moving forward
+
+    Attributes:
+        laser_sub: ROS2 node that is subscribed to Neato's LaserScan data
+        vel_pub: ROS2 node that publishes linear/angular velocity to Neato
+        marker_pub1: ROS2 node that publishes a marker at the 45 degree point of the wall
+        marker_pub2: ROS2 node that publishes a marker at the 90 degree point of the wall
+        marker_pub3: ROS2 node that publishes a marker at the 135 degree point of the wall
+        timer: ROS2 timer that governs loop timer
+        angle_tolerance: Angle tolerance for determining if Neato is parallel (%)
+        dists: Python dictionary containing distance from 45,90,135 degree points of laserscan
+    
+    Methods:
+        pol2cart(rho,phi):
+            Given a polar coordinate (rho,phi), convert to cartesian (x,y)
+            Returns (x,y)
+        get_data(msg):
+            Given Neato's laserscan, isolate 45,90,135 degree points and store it in `dists`. Then, calculate how off the Neato is
+            from being parallel with the wall
+        check_angle():
+            Check if Neato is currently parallel with the wall. Return True if parallel, False if not
+    """
     def __init__(self):
         super().__init__('wall_follower')
 
@@ -26,10 +49,7 @@ class WallFollow(Node):
         self.timer = self.create_timer(timer_period, callback = self.run_loop)
         
         self.angle_tolerance = 0.045 # percent
-        self.dist_goal = 0.6
         self.dists = None
-
-        self.fixing_angle = False
 
 
     def pol2cart(self,rho, phi):
@@ -87,16 +107,18 @@ class WallFollow(Node):
                 markerlist.append(marker)
 
         
+            # markers = MarkerArray(markers=markerlist)
             self.marker_pub1.publish(markerlist[0])
             self.marker_pub2.publish(markerlist[1])
             self.marker_pub3.publish(markerlist[2])
+           
                 
         k = 0.4
         
         if self.dists:
             if self.check_angle():
                 msg.angular.z = 0.0
-                msg.linear.x = 0.05
+                msg.linear.x = 0.2
 
             else:
                 msg.linear.x = 0.0
