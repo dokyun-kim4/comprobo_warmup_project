@@ -17,7 +17,7 @@ class PersonFollow(Node):
         odom_sub: ROS2 node that is subscribed to Neato's odometry data
         vel_pub: ROS2 node that publishes linear/angular velocity to Neato
         marker_pub: ROS2 node that publishes a marker at the center of detected person
-        timer: ROS2 node that governs loop timer
+        timer: ROS2 timer that governs loop timer
         crnt_angle: Neato's current odometry angle (degrees)
         angle_to_turn: Amount the Neato needs to turn to face the person (degrees)
         following_distance: Distance from person the Neato tries to maintain (meters)
