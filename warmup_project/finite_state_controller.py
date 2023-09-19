@@ -1,10 +1,11 @@
 import rclpy
 from rclpy.node import Node
 from math import acos, sqrt
-from numpy import rad2deg
+from numpy import rad2deg, deg2rad, cos,sin
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import LaserScan
 from nav_msgs.msg import Odometry as Odom
+from visualization_msgs.msg import Marker
 
 class FiniteStateController(Node):
     """
@@ -36,14 +37,10 @@ class FiniteStateController(Node):
             Check if Neato is currently parallel with the wall. Return True if parallel, False if not
         follow_wall():
             Based on how unaligned the Neato is, determine the appropriate linear & angular velocity
-        get_angle(msg):
-            Using the odometry data (msg), converts quaterion angle to degrees to get Neato's angular orientation
-            Store to `crnt_angle'
-        person_infront(msg):
-            Using the laser scan, determine if there is a person in the scan area. If person is detected, change mode to
-            'person-follow'. If no person is detected, change mode to 'wall-follow'
-        group_clusters(dists,max_gap):
-            Given a list of tuples in form (angle,distance), identify clusters where each point is less than `max_gap` away from each other.
+        get_angle(msg):    def pol2cart(self,rho, phi):
+    x = rho * cos(deg2rad(phi))
+    y = rho * sin(deg2rad(phi))
+    return(x, y)     n form (angle,distance), identify clusters where each point is less than `max_gap` away from each other.
             Returns a list of lists where each inner list is a cluster
         closest_clusters(clusters,window):
             Given a list of clusters identified by `group_clusters()`, filter out clusters that are outside `window (meters)`.
@@ -57,9 +54,13 @@ class FiniteStateController(Node):
 
         self.laser_sub_person = self.create_subscription(LaserScan,'scan',callback = self.person_infront, qos_profile=10)
         self.laser_sub_wall = self.create_subscription(LaserScan,'scan', callback= self.get_wall, qos_profile=10)
-
         self.odom_sub_person = self.create_subscription(Odom, 'odom', callback= self.get_angle, qos_profile=10)
+
         self.vel_pub = self.create_publisher(Twist,'cmd_vel',10)
+        self.marker_pub1 = self.create_publisher(Marker,'visualization_marker1',10)
+        self.marker_pub2 = self.create_publisher(Marker,'visualization_marker2',10)
+        self.marker_pub3 = self.create_publisher(Marker,'visualization_marker3',10)
+        self.marker_pub4 = self.create_publisher(Marker,'visualization_marker4',10)
         self.timer = self.create_timer(0.1,callback=self.run_loop)
 
         # ---------- FSM variables -------------------------------
@@ -84,6 +85,10 @@ class FiniteStateController(Node):
         self.fixing_angle = False
         # --------------------------------------------------------
 
+    def pol2cart(self,rho, phi):
+        x = rho * cos(deg2rad(phi))
+        y = rho * sin(deg2rad(phi))
+        return(x, y)      
     # ---------------------------------------- Wall follower functions -------------------------------------------------#
     def get_wall(self,msg):
         '''
@@ -197,7 +202,7 @@ class FiniteStateController(Node):
             elif self.angle_to_turn <=45: # counterclockwise
                 self.ang_vel = 0.4 #* (self.angle_to_turn / 45)
             if self.reach_goal is False:
-                self.lin_vel = 0.2
+                self.lin_vel = 0.1
 
     #----------------------------------------------------------------------------------------------------------------------#
 
@@ -208,8 +213,64 @@ class FiniteStateController(Node):
         msg = Twist()
         if self.mode == "wall-follow":
             self.follow_wall()
+            if self.dists:
+                keys = [45,90,135]
+                markerlist = []
+                for key in keys:
+                    marker = Marker()
+                    dist = self.dists["deg"+str(key)]
+                    x,y = self.pol2cart(dist,key)
+                    marker.header.frame_id = "base_link"
+                    marker.ns = "my_namespace"
+                    marker.id = 0
+                    marker.type = Marker.SPHERE
+                    marker.action = Marker.MODIFY
+                    marker.pose.position.x = x
+                    marker.pose.position.y = y
+                    marker.pose.position.z = 0.0
+                    marker.pose.orientation.x = 0.0
+                    marker.pose.orientation.y = 0.0
+                    marker.pose.orientation.z = 0.0
+                    marker.pose.orientation.w = 1.0
+                    marker.scale.x = 0.2
+                    marker.scale.y = 0.2
+                    marker.scale.z = 0.2
+                    marker.color.a = 1.0; # Don't forget to set the alpha!
+                    marker.color.r = 255.0
+                    marker.color.g = 0.0
+                    marker.color.b = 0.0
+                    markerlist.append(marker)
+                # markers = MarkerArray(markers=markerlist)
+                self.marker_pub1.publish(markerlist[0])
+                self.marker_pub2.publish(markerlist[1])
+                self.marker_pub3.publish(markerlist[2])
+
         elif self.mode == "person-follow":
             self.follow_person()
+            if self.person:
+                marker = Marker()
+                com = self.person[len(self.person) // 2]
+                x,y = self.pol2cart(com[1],com[0])
+                marker.header.frame_id = "base_link"
+                marker.ns = "my_namespace"
+                marker.id = 0
+                marker.type = Marker.SPHERE
+                marker.action = Marker.MODIFY
+                marker.pose.position.x = x
+                marker.pose.position.y = y
+                marker.pose.position.z = 0.0
+                marker.pose.orientation.x = 0.0
+                marker.pose.orientation.y = 0.0
+                marker.pose.orientation.z = 0.0
+                marker.pose.orientation.w = 1.0
+                marker.scale.x = 0.1
+                marker.scale.y = 0.1
+                marker.scale.z = 0.1
+                marker.color.a = 1.0; # Don't forget to set the alpha!
+                marker.color.r = 0.0
+                marker.color.g = 255.0
+                marker.color.b = 0.0
+                self.marker_pub4.publish(marker)
         else:
             self.lin_vel = 0.0
             self.ang_vel = 0.0
